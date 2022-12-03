@@ -1,0 +1,26 @@
+{
+	"name": "path-fixer",
+	"version": "0.0.1",
+	"description": "",
+	"license": "MIT",
+	"author": {
+		"name": "Anil Kumar"
+	},
+	"main": "main.js",
+	"type": "module",
+	"exports": "./main.js",
+	"engines": {
+		"node": ">=16.14"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"find": "node --experimental-import-meta-resolve index.js --replace $PKG"
+	},
+	"keywords": [
+		"chrome",
+		"extension",
+		"path",
+		"file",
+		"filepath"
+	]
+}
