@@ -1,0 +1,19 @@
+{
+	"name": "path-test",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "node index.js",
+		"path": "node --experimental-import-meta-resolve path.js",
+		"pathjson": "path-fixxer --pathjson"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"path-fixxer": "^0.3.2"
+	}
+}
