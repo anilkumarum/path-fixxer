@@ -1,9 +1,8 @@
 //@ts-check
-//esm module import
-import { platform } from "node:os";
+import { clr } from "./util.js";
+/* import { platform } from "node:os";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { clr } from "./util.js";
 
 const execute = promisify(exec);
 const os = platform();
@@ -12,55 +11,88 @@ const copyCmd = {
 	windows: (path) => `echo "${path}" | clip`,
 	darwin: (path) => `echo "${path}" | pbcopy`,
 	linux: (path) => `echo "${path}" | xclip -sel clip -r`,
-};
+}; */
 
-const replaceCmd = {
-	windows: (pkgName, path) => `where /r '${pkgName}' | xargs type '/${pkgName}/${path}/g'`,
-	darwin: (pkgName, path) => `grep -rl '${pkgName}' | xargs sed -i 's/${pkgName}/${path}/g'`,
-	linux: (pkgName, path) => `grep -rl '${pkgName}' | xargs sed -i 's/${pkgName}/${path}/g'`,
-};
+/**
+ *
+ * @param {String} npmPkg
+ * @returns
+ */
+//Find package real path and copy real path in clipboard
+/* export async function copyPath(npmPkg) {
+	if (typeof npmPkg !== "string") throw new Error("package name must be string");
+	await checkPkgExist(npmPkg);
 
+	const path = await getPkgPath(npmPkg);
+	//BUG same issue in xclip
+	const { stdout, stderr } = await execute(copyCmd[os](path));
+	if (stderr) throw new Error(stderr);
+
+	console.log("module path copied. Paste anywhere");
+} */
+
+//check package exist in package.json dependencies
+async function checkPkgExist(npmPkg) {
+	const pkgJson = (await import(process.env.INIT_CWD + "/package.json", { assert: { type: "json" } })).default;
+	if (!pkgJson.dependencies) throw new Error("project has no dependencies");
+	if (!pkgJson.dependencies[npmPkg]) throw new Error(npmPkg + " doesn't exist in dependencies list");
+	return true;
+}
+
+/**
+ *
+ * @param {String} npmPkg
+ * @returns {Promise<String>} realpath
+ */
 async function getPkgPath(npmPkg) {
 	//find module path
-	const fullPath = await import.meta.resolve(npmPkg);
+	const fullPath = await import.meta.resolve(npmPkg).catch((err) => {
+		throw new Error(npmPkg + " package not found in node_modules");
+	});
+
 	return fullPath.match(/(\/node_modules.*)/)[0];
 }
 
-export async function setPkgPath(npmPkg) {
-	const path = await getPkgPath(npmPkg);
-
-	const { stdout, stderr } = await execute(replaceCmd[os](npmPkg, path));
-	if (stderr) throw new Error(stderr);
-	console.log(clr["cyan"], npmPkg + " package path updated");
-}
-
+/**
+ *
+ * @param {String} npmPkg
+ * @returns {Promise<String>} realPath
+ */
 export async function realPath(npmPkg) {
+	if (typeof npmPkg !== "string") throw new Error("package name must be string");
+	await checkPkgExist(npmPkg);
+
 	const path = await getPkgPath(npmPkg);
 	console.log(path);
 	return path;
 }
 
-export async function copyPath(npmPkg) {
+/**
+ *
+ * @param {String} npmPkg
+ * @returns
+ */
+export async function setPkgPath(npmPkg) {
+	if (typeof npmPkg !== "string") throw new Error("package name must be string");
+	await checkPkgExist(npmPkg);
+
 	const path = await getPkgPath(npmPkg);
 
-	const { stdout, stderr } = await execute(copyCmd[os](path));
-	if (stderr) throw new Error(stderr);
-	console.log("module path copied. Paste anywhere");
+	const { updateAllFiles } = await import("./update.js");
+	await updateAllFiles({ [npmPkg]: path });
+
+	console.log(clr["cyan"], npmPkg + " package path updated");
 }
 
-export const setAllPkgPath = async () => {
-	const pkgJson = (await import("package.json", { assert: { type: "json" } })).default;
-	const dependencies = Object.keys(pkgJson.dependencies);
-	let i = dependencies.length;
-	while (i--) setPkgPath(dependencies[i]);
-	console.log(clr["green"], i + " packages path updated");
-};
+/**
+ *
+ * @returns {Promise<Object>} pkgPaths
+ */
+async function getPackagesPaths() {
+	const pkgJson = (await import(process.env.INIT_CWD + "/package.json", { assert: { type: "json" } })).default;
 
-export const pkgPathJson = async () => {
-	const pkgJson = (await import("package.json", { assert: { type: "json" } })).default;
-	console.log(pkgJson);
 	const dependencies = Object.keys(pkgJson.dependencies);
-
+	// for (const key of dependencies) dependencies[key] = await getPkgPath(key);
 	let promises = [];
 	for (const key of dependencies) promises.push(getPkgPath(key));
 	const results = await Promise.all(promises);
@@ -68,8 +100,25 @@ export const pkgPathJson = async () => {
 	let count = dependencies.length;
 	for (let i = 0; i < count; i++) pkgPaths[dependencies[i]] = results[i];
 
-	// for (const key of dependencies) dependencies[key] = await getPkgPath(key);
+	return pkgPaths;
+}
+/**
+ *
+ * @param {String} [pageDir]
+ */
+export const setAllPkgPath = async (pageDir) => {
+	const pkgPaths = await getPackagesPaths();
+	const { updateAllFiles } = await import("./update.js");
+	//TODO check pageDir is directory
+	await updateAllFiles(pkgPaths, pageDir);
+	console.log(clr["cyan"], "all package path updated");
+};
 
+/**
+ *
+ */
+export const pkgPathJson = async () => {
+	const pkgPaths = await getPackagesPaths();
 	const { writeFile } = await import("node:fs/promises");
 	await writeFile("pkg-path.json", JSON.stringify(pkgPaths));
 
