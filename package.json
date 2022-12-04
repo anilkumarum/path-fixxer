@@ -1,8 +1,7 @@
 {
 	"name": "path-fixxer",
-	"version": "0.1.2",
+	"version": "0.3.2",
 	"description": "Npm package path fixer for chrome extensions",
-	"repository": "anilkumarum/path-fixxer",
 	"license": "MIT",
 	"author": {
 		"name": "Anil Kumar"
@@ -13,12 +12,21 @@
 	"engines": {
 		"node": ">=16.14"
 	},
+	"repository": "anilkumarum/path-fixxer",
+	"bugs": {
+		"url": "https://github.com/anilkumarum/path-fixxer/issues"
+	},
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"find": "node --experimental-import-meta-resolve main.js --replace $PKG"
+		"dev": "node --experimental-import-meta-resolve main.js",
+		"util": "node util.js"
+	},
+	"bin": {
+		"path-fixxer": "--experimental-import-meta-resolve bin/cli.js"
 	},
 	"keywords": [
 		"chrome",
+		"chrome-extension",
 		"extension",
 		"path",
 		"file",

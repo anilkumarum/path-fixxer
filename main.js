@@ -1,6 +1,6 @@
 //@ts-check
 import { clr } from "./util.js";
-/* import { platform } from "node:os";
+import { platform } from "node:os";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 
@@ -11,7 +11,7 @@ const copyCmd = {
 	windows: (path) => `echo "${path}" | clip`,
 	darwin: (path) => `echo "${path}" | pbcopy`,
 	linux: (path) => `echo "${path}" | xclip -sel clip -r`,
-}; */
+};
 
 /**
  *
@@ -19,7 +19,7 @@ const copyCmd = {
  * @returns
  */
 //Find package real path and copy real path in clipboard
-/* export async function copyPath(npmPkg) {
+export async function copyPath(npmPkg) {
 	if (typeof npmPkg !== "string") throw new Error("package name must be string");
 	await checkPkgExist(npmPkg);
 
@@ -29,7 +29,7 @@ const copyCmd = {
 	if (stderr) throw new Error(stderr);
 
 	console.log("module path copied. Paste anywhere");
-} */
+}
 
 //check package exist in package.json dependencies
 async function checkPkgExist(npmPkg) {
@@ -46,11 +46,15 @@ async function checkPkgExist(npmPkg) {
  */
 async function getPkgPath(npmPkg) {
 	//find module path
-	const fullPath = await import.meta.resolve(npmPkg).catch((err) => {
-		throw new Error(npmPkg + " package not found in node_modules");
-	});
-
-	return fullPath.match(/(\/node_modules.*)/)[0];
+	let fullPath;
+	if (import.meta.resolve) {
+		try {
+			const fullPath = await import.meta.resolve(npmPkg);
+			return fullPath?.match(/(\/node_modules.*)/)[0];
+		} catch (error) {
+			throw new Error(npmPkg + " package not found in node_modules");
+		}
+	} else console.error(clr["red"], "add --experimental-import-meta-resolve flag in package.json scripts");
 }
 
 /**
